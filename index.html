@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyDesk</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=Inconsolata:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --surface: #fff9f0;
+    --surface2: #ede8df;
+    --border: #d4cfc6;
+    --ink: #1a1612;
+    --muted: #8a857c;
+    --accent: #e8521a;
+    --accent2: #1a6ee8;
+    --accent3: #18a349;
+    --warn: #e8a01a;
+    --tag-bg: #1a1612;
+    --tag-text: #f5f0e8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* Layout */
+  .app { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--ink);
+    color: var(--bg);
+    display: flex;
+    flex-direction: column;
+    padding: 28px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    padding: 0 24px 28px;
+    letter-spacing: -0.5px;
+    border-bottom: 1px solid #2e2a25;
+  }
+  .logo span { color: var(--accent); }
+
+  .nav { padding: 20px 0; flex: 1; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 24px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 400;
+    color: #a09890;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+    user-select: none;
+  }
+  .nav-item:hover { color: var(--bg); background: #2a2520; }
+  .nav-item.active { color: var(--bg); border-left-color: var(--accent); background: #221e19; font-weight: 500; }
+  .nav-item .icon { font-size: 1rem; width: 18px; text-align: center; }
+
+  .sidebar-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #2e2a25;
+    font-size: 0.78rem;
+    color: #4a4540;
+    font-family: 'Inconsolata', monospace;
+  }
+
+  /* Main */
+  .main {
+    flex: 1;
+    padding: 36px 40px;
+    max-width: 900px;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.8rem;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+  }
+  .page-sub {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+  }
+
+  /* Exams page */
+  .exam-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 24px; }
+
+  .exam-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.15s;
+  }
+  .exam-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,0.08); }
+  .exam-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+  }
+  .exam-card.urgent::before { background: var(--accent); }
+  .exam-card.soon::before { background: var(--warn); }
+  .exam-card.later::before { background: var(--accent3); }
+
+  .exam-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+  .exam-subject { font-size: 0.8rem; color: var(--muted); margin-bottom: 12px; }
+
+  .days-left {
+    font-family: 'Inconsolata', monospace;
+    font-size: 2rem;
+    font-weight: 500;
+    line-height: 1;
+  }
+  .days-left span { font-size: 0.75rem; font-weight: 400; color: var(--muted); font-family: 'DM Sans', sans-serif; display: block; margin-top: 2px; }
+
+  .days-left.red { color: var(--accent); }
+  .days-left.orange { color: var(--warn); }
+  .days-left.green { color: var(--accent3); }
+
+  .exam-date-small { font-size: 0.78rem; color: var(--muted); margin-top: 8px; font-family: 'Inconsolata', monospace; }
+
+  .exam-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .btn-sm {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--ink);
+    transition: all 0.1s;
+  }
+  .btn-sm:hover { background: var(--border); }
+  .btn-sm.danger { border-color: #fcc; background: #fff5f5; color: var(--accent); }
+  .btn-sm.danger:hover { background: #ffe0e0; }
+
+  /* Form */
+  .form-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 150px; }
+  .form-group label { font-size: 0.78rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input, .form-group textarea, .form-group select {
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--surface2);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    border-color: var(--accent);
+  }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+
+  .btn-primary {
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 7px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    letter-spacing: 0.3px;
+  }
+  .btn-primary:hover { opacity: 0.8; }
+
+  /* Chapters */
+  .chapter-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .chapter-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .chapter-check {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+    background: var(--surface2);
+  }
+  .chapter-check.done { background: var(--accent3); border-color: var(--accent3); color: white; }
+  .chapter-info { flex: 1; }
+  .chapter-name { font-weight: 500; font-size: 0.9rem; }
+  .chapter-exam { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+  .chapter-notes-text { font-size: 0.8rem; color: var(--muted); margin-top: 4px; font-style: italic; }
+  .chapter-actions { display: flex; gap: 6px; }
+
+  /* Today's Log */
+  .log-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .log-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .log-time {
+    font-family: 'Inconsolata', monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    white-space: nowrap;
+    padding-top: 2px;
+    min-width: 70px;
+  }
+  .log-content { flex: 1; }
+  .log-title { font-weight: 500; font-size: 0.9rem; }
+  .log-detail { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+  .log-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+    font-family: 'Inconsolata', monospace;
+    margin-right: 5px;
+    margin-top: 5px;
+  }
+  .log-tag.review { background: var(--accent2); }
+  .log-tag.practice { background: var(--accent3); }
+  .log-tag.reading { background: var(--accent); }
+
+  /* Notes */
+  .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+
+  .note-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.15s;
+    position: relative;
+  }
+  .note-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+  .note-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 6px; }
+  .note-body { font-size: 0.82rem; color: var(--muted); flex: 1; white-space: pre-wrap; line-height: 1.6; }
+  .note-footer { margin-top: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .note-date { font-size: 0.72rem; color: var(--muted); font-family: 'Inconsolata', monospace; }
+  .note-exam-tag {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  /* Stats row */
+  .stats-row { display: flex; gap: 14px; margin-bottom: 24px; flex-wrap: wrap; }
+  .stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    flex: 1;
+    min-width: 120px;
+  }
+  .stat-num {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .stat-label { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+  }
+  .empty-icon { font-size: 2rem; margin-bottom: 10px; }
+
+  /* Section divider */
+  .section-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    font-weight: 500;
+    margin-bottom: 12px;
+    margin-top: 24px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+  .delete-btn { cursor: pointer; color: var(--muted); font-size: 0.9rem; padding: 2px 6px; border-radius: 4px; border: none; background: none; transition: color 0.1s; }
+  .delete-btn:hover { color: var(--accent); }
+
+  .progress-bar-wrap { background: var(--surface2); border-radius: 20px; height: 5px; margin-top: 10px; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 20px; background: var(--accent3); transition: width 0.4s; }
+
+  select option { background: var(--surface); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="logo">Study<span>Desk</span></div>
+    <div class="nav">
+      <div class="nav-item active" onclick="showPage('exams')">
+        <span class="icon">📅</span> My Exams
+      </div>
+      <div class="nav-item" onclick="showPage('chapters')">
+        <span class="icon">📖</span> Chapters
+      </div>
+      <div class="nav-item" onclick="showPage('today')">
+        <span class="icon">✏️</span> Today's Study
+      </div>
+      <div class="nav-item" onclick="showPage('notes')">
+        <span class="icon">🗒️</span> Notes
+      </div>
+    </div>
+    <div class="sidebar-footer" id="todayDate"></div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <!-- ===== EXAMS PAGE ===== -->
+    <div class="page active" id="page-exams">
+      <div class="page-title">My Exams</div>
+      <div class="page-sub">Track your upcoming exams and countdowns.</div>
+
+      <div class="stats-row" id="examStats"></div>
+
+      <div class="exam-grid" id="examGrid"></div>
+
+      <div class="section-label">Add New Exam</div>
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Exam Name</label>
+            <input type="text" id="examName" placeholder="e.g. Mathematics Final">
+          </div>
+          <div class="form-group">
+            <label>Subject / Course</label>
+            <input type="text" id="examSubject" placeholder="e.g. Class 12 / B.Tech">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Exam Date</label>
+            <input type="date" id="examDate">
+          </div>
+          <div class="form-group">
+            <label>Exam Time (optional)</label>
+            <input type="time" id="examTime">
+          </div>
+        </div>
+        <button class="btn-primary" onclick="addExam()">+ Add Exam</button>
+      </div>
+    </div>
+
+    <!-- ===== CHAPTERS PAGE ===== -->
+    <div class="page" id="page-chapters">
+      <div class="page-title">Chapters</div>
+      <div class="page-sub">Track which chapters you need to study — check them off as you go.</div>
+
+      <div id="chapterProgress" style="margin-bottom:20px;"></div>
+
+      <div class="section-label">Add Chapter</div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Chapter Name</label>
+            <input type="text" id="chapterName" placeholder="e.g. Thermodynamics">
+          </div>
+          <div class="form-group">
+            <label>Exam</label>
+            <select id="chapterExam"><option value="">-- Select Exam --</option></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Notes / What to cover</label>
+            <input type="text" id="chapterNotes" placeholder="e.g. Focus on derivations, practice numericals">
+          </div>
+        </div>
+        <button class="btn-primary" onclick="addChapter()">+ Add Chapter</button>
+      </div>
+
+      <div class="section-label">All Chapters</div>
+      <div class="chapter-list" id="chapterList"></div>
+    </div>
+
+    <!-- ===== TODAY PAGE ===== -->
+    <div class="page" id="page-today">
+      <div class="page-title">Today's Study Log</div>
+      <div class="page-sub">Log what you studied today. Stay honest with yourself.</div>
+
+      <div class="section-label">Log What You Studied</div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>What did you study?</label>
+            <input type="text" id="logTitle" placeholder="e.g. Chapter 4 – Integration">
+          </div>
+          <div class="form-group" style="max-width:160px;">
+            <label>Type</label>
+            <select id="logType">
+              <option value="reading">Reading</option>
+              <option value="practice">Practice / Problems</option>
+              <option value="review">Revision / Review</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Details (optional)</label>
+            <input type="text" id="logDetail" placeholder="e.g. Did 15 problems, understood concept well">
+          </div>
+          <div class="form-group" style="max-width:160px;">
+            <label>Duration (min)</label>
+            <input type="number" id="logDuration" placeholder="e.g. 45" min="1">
+          </div>
+        </div>
+        <button class="btn-primary" onclick="addLog()">+ Log Session</button>
+      </div>
+
+      <div class="section-label" id="todayLogLabel">Today's Sessions</div>
+      <div class="log-list" id="logList"></div>
+    </div>
+
+    <!-- ===== NOTES PAGE ===== -->
+    <div class="page" id="page-notes">
+      <div class="page-title">Notes</div>
+      <div class="page-sub">Jot down anything — formulas, key points, reminders.</div>
+
+      <div class="section-label">Add Note</div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="noteTitle" placeholder="e.g. Important Formulas">
+          </div>
+          <div class="form-group" style="max-width:200px;">
+            <label>Related Exam (optional)</label>
+            <select id="noteExam"><option value="">-- General --</option></select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Note</label>
+            <textarea id="noteBody" placeholder="Write anything here..."></textarea>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="addNote()">+ Save Note</button>
+      </div>
+
+      <div class="notes-grid" id="notesGrid"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ---- STATE ----
+let state = {
+  exams: [],
+  chapters: [],
+  logs: [],
+  notes: []
+};
+
+function load() {
+  const saved = localStorage.getItem('studydesk_v1');
+  if (saved) state = JSON.parse(saved);
+  // ensure arrays
+  state.exams = state.exams || [];
+  state.chapters = state.chapters || [];
+  state.logs = state.logs || [];
+  state.notes = state.notes || [];
+}
+
+function save() {
+  localStorage.setItem('studydesk_v1', JSON.stringify(state));
+}
+
+// ---- NAV ----
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.textContent.toLowerCase().includes(name === 'exams' ? 'exam' : name === 'chapters' ? 'chapter' : name === 'today' ? 'today' : 'note')) {
+      n.classList.add('active');
+    }
+  });
+  renderAll();
+}
+
+// ---- DATE HELPERS ----
+function today() { return new Date().toISOString().slice(0,10); }
+function daysLeft(dateStr) {
+  const now = new Date(); now.setHours(0,0,0,0);
+  const d = new Date(dateStr); d.setHours(0,0,0,0);
+  return Math.round((d - now) / 86400000);
+}
+function fmtDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+}
+function fmtTime(ts) {
+  return new Date(ts).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+}
+
+// ---- EXAMS ----
+function addExam() {
+  const name = document.getElementById('examName').value.trim();
+  const subject = document.getElementById('examSubject').value.trim();
+  const date = document.getElementById('examDate').value;
+  const time = document.getElementById('examTime').value;
+  if (!name || !date) return alert('Please fill exam name and date.');
+  state.exams.push({ id: Date.now(), name, subject, date, time });
+  save();
+  document.getElementById('examName').value = '';
+  document.getElementById('examSubject').value = '';
+  document.getElementById('examDate').value = '';
+  document.getElementById('examTime').value = '';
+  renderExams();
+  populateExamSelects();
+}
+
+function deleteExam(id) {
+  if (!confirm('Delete this exam?')) return;
+  state.exams = state.exams.filter(e => e.id !== id);
+  save(); renderAll(); populateExamSelects();
+}
+
+function renderExams() {
+  const grid = document.getElementById('examGrid');
+  const stats = document.getElementById('examStats');
+  const sorted = [...state.exams].sort((a,b) => new Date(a.date)-new Date(b.date));
+
+  // Stats
+  const upcoming = state.exams.filter(e => daysLeft(e.date) >= 0).length;
+  const totalChapters = state.chapters.length;
+  const doneChapters = state.chapters.filter(c => c.done).length;
+  const todayLogs = state.logs.filter(l => l.date === today()).length;
+  stats.innerHTML = `
+    <div class="stat-box"><div class="stat-num">${upcoming}</div><div class="stat-label">Upcoming Exams</div></div>
+    <div class="stat-box"><div class="stat-num">${doneChapters}/${totalChapters}</div><div class="stat-label">Chapters Done</div></div>
+    <div class="stat-box"><div class="stat-num">${todayLogs}</div><div class="stat-label">Sessions Today</div></div>
+    <div class="stat-box"><div class="stat-num">${state.notes.length}</div><div class="stat-label">Notes Saved</div></div>
+  `;
+
+  if (!sorted.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📅</div>No exams added yet. Add your first exam below!</div>`;
+    return;
+  }
+
+  grid.innerHTML = sorted.map(exam => {
+    const dl = daysLeft(exam.date);
+    const cls = dl <= 3 ? 'urgent' : dl <= 7 ? 'soon' : 'later';
+    const numCls = dl <= 3 ? 'red' : dl <= 7 ? 'orange' : 'green';
+    const dlText = dl < 0 ? 'Passed' : dl === 0 ? 'TODAY!' : `${dl}`;
+    const dlSub = dl < 0 ? '' : dl === 0 ? '🔥 Good luck!' : 'days left';
+    const examChapters = state.chapters.filter(c => c.examId == exam.id);
+    const doneCh = examChapters.filter(c => c.done).length;
+    const pct = examChapters.length ? Math.round(doneCh / examChapters.length * 100) : 0;
+    return `
+      <div class="exam-card ${cls}">
+        <div class="exam-name">${exam.name}</div>
+        <div class="exam-subject">${exam.subject || '—'}</div>
+        <div class="days-left ${numCls}">${dlText}<span>${dlSub}</span></div>
+        <div class="exam-date-small">${fmtDate(exam.date)}${exam.time ? ' at ' + exam.time : ''}</div>
+        ${examChapters.length ? `
+          <div style="margin-top:10px;">
+            <div style="font-size:0.75rem;color:var(--muted);">${doneCh}/${examChapters.length} chapters done (${pct}%)</div>
+            <div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
+          </div>` : ''}
+        <div class="exam-actions">
+          <button class="btn-sm danger" onclick="deleteExam(${exam.id})">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ---- CHAPTERS ----
+function addChapter() {
+  const name = document.getElementById('chapterName').value.trim();
+  const examId = document.getElementById('chapterExam').value;
+  const notes = document.getElementById('chapterNotes').value.trim();
+  if (!name) return alert('Enter a chapter name.');
+  state.chapters.push({ id: Date.now(), name, examId: examId || null, notes, done: false });
+  save();
+  document.getElementById('chapterName').value = '';
+  document.getElementById('chapterNotes').value = '';
+  renderChapters();
+}
+
+function toggleChapter(id) {
+  const ch = state.chapters.find(c => c.id === id);
+  if (ch) { ch.done = !ch.done; save(); renderChapters(); renderExams(); }
+}
+
+function deleteChapter(id) {
+  state.chapters = state.chapters.filter(c => c.id !== id);
+  save(); renderChapters(); renderExams();
+}
+
+function renderChapters() {
+  const list = document.getElementById('chapterList');
+  const prog = document.getElementById('chapterProgress');
+  const total = state.chapters.length;
+  const done = state.chapters.filter(c => c.done).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+
+  prog.innerHTML = total ? `
+    <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--muted);margin-bottom:6px;">
+      <span>Overall Progress</span><span>${done}/${total} chapters (${pct}%)</span>
+    </div>
+    <div class="progress-bar-wrap" style="height:8px;"><div class="progress-bar" style="width:${pct}%"></div></div>
+  ` : '';
+
+  if (!state.chapters.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📖</div>No chapters yet. Add chapters you need to study!</div>`;
+    return;
+  }
+
+  // Group by exam
+  const grouped = {};
+  state.chapters.forEach(ch => {
+    const key = ch.examId || 'general';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(ch);
+  });
+
+  list.innerHTML = Object.entries(grouped).map(([examId, chs]) => {
+    const exam = state.exams.find(e => e.id == examId);
+    const groupLabel = exam ? exam.name : 'General';
+    return `
+      <div style="margin-bottom:8px;">
+        <div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:500;margin-bottom:6px;">${groupLabel}</div>
+        ${chs.map(ch => `
+          <div class="chapter-item" style="${ch.done ? 'opacity:0.5;' : ''}">
+            <div class="chapter-check ${ch.done ? 'done' : ''}" onclick="toggleChapter(${ch.id})">${ch.done ? '✓' : ''}</div>
+            <div class="chapter-info">
+              <div class="chapter-name" style="${ch.done ? 'text-decoration:line-through;' : ''}">${ch.name}</div>
+              ${ch.notes ? `<div class="chapter-notes-text">${ch.notes}</div>` : ''}
+            </div>
+            <button class="delete-btn" onclick="deleteChapter(${ch.id})">✕</button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }).join('');
+}
+
+// ---- TODAY LOG ----
+function addLog() {
+  const title = document.getElementById('logTitle').value.trim();
+  const type = document.getElementById('logType').value;
+  const detail = document.getElementById('logDetail').value.trim();
+  const duration = document.getElementById('logDuration').value;
+  if (!title) return alert('What did you study?');
+  state.logs.push({ id: Date.now(), title, type, detail, duration: duration ? parseInt(duration) : null, date: today(), ts: Date.now() });
+  save();
+  document.getElementById('logTitle').value = '';
+  document.getElementById('logDetail').value = '';
+  document.getElementById('logDuration').value = '';
+  renderLogs();
+}
+
+function deleteLog(id) {
+  state.logs = state.logs.filter(l => l.id !== id);
+  save(); renderLogs();
+}
+
+function renderLogs() {
+  const list = document.getElementById('logList');
+  const label = document.getElementById('todayLogLabel');
+  const todayItems = state.logs.filter(l => l.date === today()).reverse();
+  const totalMin = todayItems.reduce((s,l) => s + (l.duration || 0), 0);
+
+  label.textContent = `Today's Sessions${totalMin ? ' · ' + totalMin + ' min total' : ''}`;
+
+  if (!todayItems.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">✏️</div>Nothing logged today yet. Start studying and log your sessions!</div>`;
+    return;
+  }
+
+  list.innerHTML = todayItems.map(log => `
+    <div class="log-item">
+      <div class="log-time">${fmtTime(log.ts)}</div>
+      <div class="log-content">
+        <div class="log-title">${log.title}</div>
+        ${log.detail ? `<div class="log-detail">${log.detail}</div>` : ''}
+        <div>
+          <span class="log-tag ${log.type}">${log.type}</span>
+          ${log.duration ? `<span class="log-tag">${log.duration} min</span>` : ''}
+        </div>
+      </div>
+      <button class="delete-btn" onclick="deleteLog(${log.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+// ---- NOTES ----
+function addNote() {
+  const title = document.getElementById('noteTitle').value.trim();
+  const body = document.getElementById('noteBody').value.trim();
+  const examId = document.getElementById('noteExam').value;
+  if (!title || !body) return alert('Please fill title and note.');
+  state.notes.push({ id: Date.now(), title, body, examId: examId || null, date: today() });
+  save();
+  document.getElementById('noteTitle').value = '';
+  document.getElementById('noteBody').value = '';
+  renderNotes();
+}
+
+function deleteNote(id) {
+  state.notes = state.notes.filter(n => n.id !== id);
+  save(); renderNotes(); renderExams();
+}
+
+function renderNotes() {
+  const grid = document.getElementById('notesGrid');
+  if (!state.notes.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🗒️</div>No notes yet. Add formulas, key points, anything!</div>`;
+    return;
+  }
+  const sorted = [...state.notes].reverse();
+  grid.innerHTML = sorted.map(note => {
+    const exam = state.exams.find(e => e.id == note.examId);
+    return `
+      <div class="note-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div class="note-title">${note.title}</div>
+          <button class="delete-btn" onclick="deleteNote(${note.id})">✕</button>
+        </div>
+        <div class="note-body">${note.body}</div>
+        <div class="note-footer">
+          <div class="note-date">${fmtDate(note.date)}</div>
+          ${exam ? `<span class="note-exam-tag">${exam.name}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ---- POPULATE SELECTS ----
+function populateExamSelects() {
+  const selects = ['chapterExam', 'noteExam'];
+  selects.forEach(sid => {
+    const sel = document.getElementById(sid);
+    const val = sel.value;
+    sel.innerHTML = `<option value="">-- ${sid === 'chapterExam' ? 'Select Exam' : 'General'} --</option>`;
+    state.exams.forEach(e => {
+      sel.innerHTML += `<option value="${e.id}" ${val == e.id ? 'selected' : ''}>${e.name}</option>`;
+    });
+  });
+}
+
+// ---- RENDER ALL ----
+function renderAll() {
+  renderExams();
+  renderChapters();
+  renderLogs();
+  renderNotes();
+  populateExamSelects();
+}
+
+// ---- INIT ----
+load();
+document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+renderAll();
+</script>
+</body>
+</html>
